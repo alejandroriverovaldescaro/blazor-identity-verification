@@ -2,12 +2,16 @@ using IdentityVerification.Components;
 using IdentityVerification.Data;
 using IdentityVerification.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Add Fluent UI services
+builder.Services.AddFluentUIComponents();
 
 // Add database context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

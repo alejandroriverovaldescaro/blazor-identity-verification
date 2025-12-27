@@ -1,20 +1,20 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
+<FluentLayout>
+    <FluentHeader>
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.Start" VerticalAlignment="VerticalAlignment.Center" Style="padding: 0 20px; height: 60px;">
+            <FluentLabel Typo="Typography.H4">🛡️ Identity Verification</FluentLabel>
+        </FluentStack>
+    </FluentHeader>
+    
+    <FluentStack Orientation="Orientation.Horizontal" Style="height: calc(100vh - 60px);">
         <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+        
+        <FluentBodyContent Style="flex: 1; overflow-y: auto;">
             @Body
-        </article>
-    </main>
-</div>
+        </FluentBodyContent>
+    </FluentStack>
+</FluentLayout>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

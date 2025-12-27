@@ -7,70 +7,64 @@
 
 <PageTitle>Identity Verification</PageTitle>
 
-<div class="container mt-4">
-    <h1>Identity Verification</h1>
-    <p>Please upload your ID document and capture a selfie for verification.</p>
+<FluentStack Orientation="Orientation.Vertical" Style="padding: 20px;">
+    <FluentLabel Typo="Typography.H3">Identity Verification</FluentLabel>
+    <FluentLabel Typo="Typography.Body">Please upload your ID document and capture a selfie for verification.</FluentLabel>
     
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <DocumentUpload OnFileUploaded="HandleDocumentUpload" />
-                </div>
-            </div>
-        </div>
+    <FluentGrid Spacing="3" Style="margin-top: 20px;">
+        <FluentGridItem xs="12" sm="6">
+            <FluentCard Style="height: 100%;">
+                <DocumentUpload OnFileUploaded="HandleDocumentUpload" />
+            </FluentCard>
+        </FluentGridItem>
         
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <SelfieCapture OnImageCaptured="HandleSelfieCapture" />
-                </div>
-            </div>
-        </div>
-    </div>
+        <FluentGridItem xs="12" sm="6">
+            <FluentCard Style="height: 100%;">
+                <SelfieCapture OnImageCaptured="HandleSelfieCapture" />
+            </FluentCard>
+        </FluentGridItem>
+    </FluentGrid>
     
-    <div class="row mt-3">
-        <div class="col-12">
-            <button class="btn btn-primary btn-lg" 
-                    @onclick="VerifyIdentity" 
-                    disabled="@(!CanVerify || isVerifying)">
-                @if (isVerifying)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <span>Verifying...</span>
-                }
-                else
-                {
-                    <span>Verify Identity</span>
-                }
-            </button>
-        </div>
-    </div>
+    <FluentStack Orientation="Orientation.Horizontal" Style="margin-top: 20px;">
+        <FluentButton Appearance="Appearance.Accent" 
+                      @onclick="VerifyIdentity" 
+                      Disabled="@(!CanVerify || isVerifying)">
+            @if (isVerifying)
+            {
+                <FluentProgressRing Style="width: 20px; height: 20px; margin-right: 8px;" />
+                <span>Verifying...</span>
+            }
+            else
+            {
+                <span>✓ Verify Identity</span>
+            }
+        </FluentButton>
+    </FluentStack>
     
     @if (verificationResult != null)
     {
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card @(verificationResult.IsVerified ? "border-success" : "border-danger")">
-                    <div class="card-header @(verificationResult.IsVerified ? "bg-success text-white" : "bg-danger text-white")">
-                        <h4>Verification Result</h4>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Status:</strong> @(verificationResult.IsVerified ? "✓ Verified" : "✗ Not Verified")</p>
-                        <p><strong>Confidence Score:</strong> @verificationResult.ConfidenceScore.ToString("P2")</p>
-                        <p><strong>Message:</strong> @verificationResult.Message</p>
-                        <p><strong>Date:</strong> @verificationResult.AttemptDate.ToString("yyyy-MM-dd HH:mm:ss")</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        var borderStyle = $"margin-top: 20px; border: 2px solid {(verificationResult.IsVerified ? "var(--success)" : "var(--error)")}";
+        <FluentCard Style="@borderStyle">
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
+                <FluentLabel Typo="Typography.H5" Color="@(verificationResult.IsVerified ? Color.Success : Color.Error)">
+                    Verification Result
+                </FluentLabel>
+                <FluentDivider />
+                <FluentLabel><strong>Status:</strong> @(verificationResult.IsVerified ? "✓ Verified" : "✗ Not Verified")</FluentLabel>
+                <FluentLabel><strong>Confidence Score:</strong> @verificationResult.ConfidenceScore.ToString("P2")</FluentLabel>
+                <FluentLabel><strong>Message:</strong> @verificationResult.Message</FluentLabel>
+                <FluentLabel><strong>Date:</strong> @verificationResult.AttemptDate.ToString("yyyy-MM-dd HH:mm:ss")</FluentLabel>
+            </FluentStack>
+        </FluentCard>
     }
     
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger mt-3">@errorMessage</div>
+        <FluentMessageBar Intent="MessageIntent.Error" Style="margin-top: 20px;">
+            @errorMessage
+        </FluentMessageBar>
     }
-</div>
+</FluentStack>
 
 @code {
     private IBrowserFile? documentFile;

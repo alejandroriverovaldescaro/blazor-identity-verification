@@ -1,23 +1,25 @@
 @using Microsoft.AspNetCore.Components.Forms
 
-<div class="document-upload">
-    <h3>Upload ID Document</h3>
+<FluentStack Orientation="Orientation.Vertical" VerticalGap="15">
+    <FluentLabel Typo="Typography.H5">Upload ID Document</FluentLabel>
     
-    <InputFile OnChange="HandleFileSelected" accept="image/*" class="form-control" />
+    <InputFile OnChange="HandleFileSelected" accept="image/*" class="fluent-input-file" />
     
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger mt-2">@errorMessage</div>
+        <FluentMessageBar Intent="MessageIntent.Error">
+            @errorMessage
+        </FluentMessageBar>
     }
     
     @if (imagePreview != null)
     {
-        <div class="mt-3">
-            <h5>Preview:</h5>
-            <img src="@imagePreview" alt="Document preview" class="img-thumbnail" style="max-width: 400px; max-height: 400px;" />
-        </div>
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
+            <FluentLabel Typo="Typography.Body"><strong>Preview:</strong></FluentLabel>
+            <img src="@imagePreview" alt="Document preview" style="max-width: 100%; max-height: 400px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+        </FluentStack>
     }
-</div>
+</FluentStack>
 
 @code {
     private string? imagePreview;

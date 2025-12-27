@@ -2,6 +2,30 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+<FluentStack Orientation="Orientation.Vertical" VerticalGap="20" Style="padding: 20px;">
+    <FluentLabel Typo="Typography.H3">Welcome to Identity Verification</FluentLabel>
+    
+    <FluentCard>
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="15">
+            <FluentLabel Typo="Typography.Body">
+                This application provides a secure and efficient way to verify identity using facial recognition technology powered by Azure Computer Vision.
+            </FluentLabel>
+            
+            <FluentDivider />
+            
+            <FluentLabel Typo="Typography.H5">Features:</FluentLabel>
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
+                <FluentLabel>📄 Upload ID documents with validation</FluentLabel>
+                <FluentLabel>📸 Real-time webcam selfie capture</FluentLabel>
+                <FluentLabel>🛡️ Azure AI-powered face comparison</FluentLabel>
+                <FluentLabel>💾 Secure storage and verification history</FluentLabel>
+            </FluentStack>
+            
+            <FluentDivider />
+            
+            <FluentButton Appearance="Appearance.Accent" href="/verify">
+                Start Verification →
+            </FluentButton>
+        </FluentStack>
+    </FluentCard>
+</FluentStack>
