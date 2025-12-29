@@ -10,11 +10,29 @@ public class AzureVisionService : IAzureVisionService
 
     public AzureVisionService(IConfiguration configuration, ILogger<AzureVisionService> logger)
     {
-        var endpoint = configuration["AzureVision:Endpoint"] ?? throw new InvalidOperationException("Azure Vision endpoint not configured");
-        var key = configuration["AzureVision:Key"] ?? throw new InvalidOperationException("Azure Vision key not configured");
-        
-        _client = new ImageAnalysisClient(new Uri(endpoint), new AzureKeyCredential(key));
         _logger = logger;
+        
+        try
+        {
+            var endpoint = configuration["AzureVision:Endpoint"] ?? throw new InvalidOperationException("Azure Vision endpoint not configured");
+            var key = configuration["AzureVision:Key"] ?? throw new InvalidOperationException("Azure Vision key not configured");
+            
+            _logger.LogInformation($"Initializing Azure Vision Service with endpoint: {endpoint}");
+            
+            _client = new ImageAnalysisClient(new Uri(endpoint), new AzureKeyCredential(key));
+            
+            _logger.LogInformation("✅ Azure Vision Service initialized successfully");
+        }
+        catch (UriFormatException ex)
+        {
+            _logger.LogError(ex, $"❌ Invalid Azure Vision endpoint URL format. Check the endpoint in appsettings.json");
+            throw new InvalidOperationException($"Invalid Azure Vision endpoint URL: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ Failed to initialize Azure Vision Service: {ex.Message}");
+            throw;
+        }
     }
 
     public async Task<byte[]?> DetectFaceAsync(Stream imageStream)
