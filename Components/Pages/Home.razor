@@ -1,4 +1,6 @@
 ﻿@page "/"
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
@@ -23,9 +25,16 @@
             
             <FluentDivider />
             
-            <FluentButton Appearance="Appearance.Accent" href="/verify">
+            <FluentButton Appearance="Appearance.Accent" @onclick="NavigateToVerification">
                 Start Verification →
             </FluentButton>
         </FluentStack>
     </FluentCard>
 </FluentStack>
+
+@code {
+    private void NavigateToVerification()
+    {
+        Navigation.NavigateTo("/verify");
+    }
+}
