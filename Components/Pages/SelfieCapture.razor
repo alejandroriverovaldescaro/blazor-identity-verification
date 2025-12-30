@@ -64,20 +64,26 @@
         try
         {
             errorMessage = null;
+            
+            // Set camera active first to render the video element
+            isCameraActive = true;
+            StateHasChanged();
+            
+            // Wait for the DOM to update
+            await Task.Delay(100);
+            
             var success = await JSRuntime.InvokeAsync<bool>("cameraInterop.startCamera", "videoElement");
             
-            if (success)
-            {
-                isCameraActive = true;
-            }
-            else
+            if (!success)
             {
                 errorMessage = "Failed to start camera. Please check permissions.";
+                isCameraActive = false;
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Error starting camera: {ex.Message}";
+            isCameraActive = false;
         }
     }
 
