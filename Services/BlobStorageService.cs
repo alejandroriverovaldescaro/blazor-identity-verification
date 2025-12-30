@@ -9,6 +9,9 @@ public class BlobStorageService : IBlobStorageService
     private readonly string _containerName;
     private readonly ILogger<BlobStorageService> _logger;
 
+    private bool _containerEnsured = false;
+    private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
+
     public BlobStorageService(IConfiguration configuration, ILogger<BlobStorageService> logger)
     {
         var connectionString = configuration["AzureStorage:ConnectionString"] 
@@ -18,27 +21,40 @@ public class BlobStorageService : IBlobStorageService
         _blobServiceClient = new BlobServiceClient(connectionString);
         _logger = logger;
         
-        // Ensure container exists
-        EnsureContainerExistsAsync().Wait();
+        _logger.LogInformation("BlobStorageService initialized (container will be ensured on first use)");
     }
 
     private async Task EnsureContainerExistsAsync()
     {
+        if (_containerEnsured)
+            return;
+
+        await _initLock.WaitAsync();
         try
         {
+            if (_containerEnsured)
+                return;
+
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
             await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
             _logger.LogInformation($"Container '{_containerName}' is ready");
+            _containerEnsured = true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error ensuring container '{_containerName}' exists");
             throw;
         }
+        finally
+        {
+            _initLock.Release();
+        }
     }
 
     public async Task<string> UploadImageAsync(Stream imageStream, string fileName)
     {
+        await EnsureContainerExistsAsync();
+        
         try
         {
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
@@ -61,6 +77,8 @@ public class BlobStorageService : IBlobStorageService
 
     public async Task<Stream> DownloadImageAsync(string fileName)
     {
+        await EnsureContainerExistsAsync();
+        
         try
         {
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
