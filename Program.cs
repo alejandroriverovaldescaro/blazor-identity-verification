@@ -19,9 +19,17 @@ builder.Services.AddSignalR(options =>
 // Add Fluent UI services
 builder.Services.AddFluentUIComponents();
 
-// Add database context
+// Add database context with retry logic for transient failures
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlServerOptionsAction: sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        }));
 
 // Register services
 builder.Services.AddScoped<IIdentityVerificationService, IdentityVerificationService>();
