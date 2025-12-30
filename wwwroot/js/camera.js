@@ -50,13 +50,26 @@ window.cameraInterop = {
             }
 
             const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
             
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // Resize image to reasonable size for face detection (max 1920x1080)
+            const maxWidth = 1920;
+            const maxHeight = 1080;
+            let width = video.videoWidth;
+            let height = video.videoHeight;
             
-            // Convert canvas to blob and return as base64
-            return canvas.toDataURL('image/jpeg', 0.95);
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width = width * ratio;
+                height = height * ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            context.drawImage(video, 0, 0, width, height);
+            
+            // Convert canvas to JPEG with 0.8 quality to reduce size while maintaining face clarity
+            return canvas.toDataURL('image/jpeg', 0.8);
         } catch (error) {
             console.error('Error capturing image:', error);
             return null;
