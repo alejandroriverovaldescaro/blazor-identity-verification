@@ -1,0 +1,145 @@
+@page "/verify"
+@using Microsoft.AspNetCore.Components.Forms
+@using IdentityVerification.Services
+@using IdentityVerification.Models
+@inject IIdentityVerificationService VerificationService
+@rendermode InteractiveServer
+
+<PageTitle>Identity Verification</PageTitle>
+
+<FluentStack Orientation="Orientation.Vertical" Style="padding: 20px;">
+    <FluentLabel Typo="Typography.H3">Identity Verification</FluentLabel>
+    <FluentLabel Typo="Typography.Body">Please upload your ID document and capture a selfie for verification.</FluentLabel>
+    
+    <FluentGrid Spacing="3" Style="margin-top: 20px;">
+        <FluentGridItem xs="12" sm="6">
+            <FluentCard Style="height: 100%;">
+                <DocumentUpload OnFileUploaded="HandleDocumentUpload" />
+            </FluentCard>
+        </FluentGridItem>
+        
+        <FluentGridItem xs="12" sm="6">
+            <FluentCard Style="height: 100%;">
+                <SelfieCapture OnImageCaptured="HandleSelfieCapture" />
+            </FluentCard>
+        </FluentGridItem>
+    </FluentGrid>
+    
+    <FluentStack Orientation="Orientation.Horizontal" Style="margin-top: 20px;">
+        <FluentButton Appearance="Appearance.Accent" 
+                      @onclick="VerifyIdentity" 
+                      Disabled="@(!CanVerify || isVerifying)">
+            @if (isVerifying)
+            {
+                <FluentProgressRing Style="width: 20px; height: 20px; margin-right: 8px;" />
+                <span>Verifying...</span>
+            }
+            else
+            {
+                <span>✓ Verify Identity</span>
+            }
+        </FluentButton>
+    </FluentStack>
+    
+    @if (verificationResult != null)
+    {
+        var borderStyle = $"margin-top: 20px; border: 2px solid {(verificationResult.IsVerified ? "var(--success)" : "var(--error)")}";
+        <FluentCard Style="@borderStyle">
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
+                <FluentLabel Typo="Typography.H5" Color="@(verificationResult.IsVerified ? Color.Success : Color.Error)">
+                    Verification Result
+                </FluentLabel>
+                <FluentDivider />
+                <FluentLabel><strong>Status:</strong> @(verificationResult.IsVerified ? "✓ Verified" : "✗ Not Verified")</FluentLabel>
+                <FluentLabel><strong>Confidence Score:</strong> @verificationResult.ConfidenceScore.ToString("P2")</FluentLabel>
+                <FluentLabel><strong>Message:</strong> @verificationResult.Message</FluentLabel>
+                <FluentLabel><strong>Date:</strong> @verificationResult.AttemptDate.ToString("yyyy-MM-dd HH:mm:ss")</FluentLabel>
+            </FluentStack>
+        </FluentCard>
+    }
+    
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <FluentMessageBar Intent="MessageIntent.Error" Style="margin-top: 20px;">
+            @errorMessage
+        </FluentMessageBar>
+    }
+</FluentStack>
+
+@code {
+    private IBrowserFile? documentFile;
+    private string? selfieImageData;
+    private bool isVerifying = false;
+    private VerificationResult? verificationResult;
+    private string? errorMessage;
+    
+    private bool CanVerify => documentFile != null && !string.IsNullOrEmpty(selfieImageData);
+
+    private void HandleDocumentUpload(IBrowserFile file)
+    {
+        documentFile = file;
+        verificationResult = null;
+        errorMessage = null;
+    }
+
+    private void HandleSelfieCapture(string imageData)
+    {
+        selfieImageData = imageData;
+        verificationResult = null;
+        errorMessage = null;
+    }
+
+    private async Task VerifyIdentity()
+    {
+        if (documentFile == null || string.IsNullOrEmpty(selfieImageData))
+        {
+            errorMessage = "Please upload a document and capture a selfie";
+            return;
+        }
+
+        isVerifying = true;
+        errorMessage = null;
+        verificationResult = null;
+
+        try
+        {
+            // Get document stream
+            using var documentStream = documentFile.OpenReadStream(10 * 1024 * 1024);
+            var documentMemoryStream = new MemoryStream();
+            await documentStream.CopyToAsync(documentMemoryStream);
+            documentMemoryStream.Position = 0;
+
+            // Convert base64 selfie to stream
+            var selfieBase64 = selfieImageData.Split(',')[1];
+            var selfieBytes = Convert.FromBase64String(selfieBase64);
+            var selfieStream = new MemoryStream(selfieBytes);
+
+            // Save images to blob storage
+            var documentFileName = $"document_{Guid.NewGuid()}.jpg";
+            var selfieFileName = $"selfie_{Guid.NewGuid()}.jpg";
+            
+            documentMemoryStream.Position = 0;
+            selfieStream.Position = 0;
+            
+            var documentPath = await VerificationService.SaveImageAsync(documentMemoryStream, documentFileName);
+            var selfiePath = await VerificationService.SaveImageAsync(selfieStream, selfieFileName);
+
+            // Perform verification
+            documentMemoryStream.Position = 0;
+            selfieStream.Position = 0;
+            
+            verificationResult = await VerificationService.VerifyIdentityAsync(documentMemoryStream, selfieStream);
+
+            // Save verification attempt to database
+            await VerificationService.SaveVerificationAttemptAsync(verificationResult, documentPath, selfiePath);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred during verification: {ex.Message}";
+        }
+        finally
+        {
+            isVerifying = false;
+        }
+    }
+}

@@ -1,0 +1,140 @@
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+<FluentStack Orientation="Orientation.Vertical" VerticalGap="15">
+    <FluentLabel Typo="Typography.H5">Capture Selfie</FluentLabel>
+    
+    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
+        @if (!isCameraActive)
+        {
+            <FluentButton Appearance="Appearance.Accent" 
+                          @onclick="StartCamera">
+                📸 Start Camera
+            </FluentButton>
+        }
+        else
+        {
+            <FluentButton Appearance="Appearance.Stealth" 
+                          @onclick="StopCamera">
+                ⏹️ Stop Camera
+            </FluentButton>
+            <FluentButton Appearance="Appearance.Accent" 
+                          @onclick="CaptureImage">
+                📷 Capture Photo
+            </FluentButton>
+        }
+    </FluentStack>
+    
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <FluentMessageBar Intent="MessageIntent.Error">
+            @errorMessage
+        </FluentMessageBar>
+    }
+    
+    <div class="camera-container">
+        @if (isCameraActive)
+        {
+            <video id="videoElement" autoplay playsinline style="max-width: 100%; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></video>
+        }
+        
+        @if (!string.IsNullOrEmpty(capturedImage))
+        {
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
+                <FluentLabel Typo="Typography.Body"><strong>Captured Image:</strong></FluentLabel>
+                <img src="@capturedImage" alt="Captured selfie" style="max-width: 100%; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+            </FluentStack>
+        }
+    </div>
+    
+    <canvas id="canvasElement" style="display: none;"></canvas>
+</FluentStack>
+
+@code {
+    private bool isCameraActive = false;
+    private string? capturedImage;
+    private string? errorMessage;
+    
+    [Parameter]
+    public EventCallback<string> OnImageCaptured { get; set; }
+
+    private async Task StartCamera()
+    {
+        try
+        {
+            errorMessage = null;
+            
+            // Set camera active first to render the video element
+            isCameraActive = true;
+            StateHasChanged();
+            
+            // Wait for the DOM to update
+            await Task.Delay(100);
+            
+            var success = await JSRuntime.InvokeAsync<bool>("cameraInterop.startCamera", "videoElement");
+            
+            if (!success)
+            {
+                errorMessage = "Failed to start camera. Please check permissions.";
+                isCameraActive = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error starting camera: {ex.Message}";
+            isCameraActive = false;
+        }
+    }
+
+    private async Task StopCamera()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("cameraInterop.stopCamera");
+            isCameraActive = false;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error stopping camera: {ex.Message}";
+        }
+    }
+
+    private async Task CaptureImage()
+    {
+        try
+        {
+            errorMessage = null;
+            capturedImage = await JSRuntime.InvokeAsync<string>("cameraInterop.captureImage", "videoElement", "canvasElement");
+            
+            if (!string.IsNullOrEmpty(capturedImage))
+            {
+                await OnImageCaptured.InvokeAsync(capturedImage);
+                await StopCamera();
+            }
+            else
+            {
+                errorMessage = "Failed to capture image";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error capturing image: {ex.Message}";
+        }
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (isCameraActive)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("cameraInterop.stopCamera");
+            }
+            catch
+            {
+                // Ignore errors during disposal
+            }
+        }
+    }
+}
